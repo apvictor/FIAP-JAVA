@@ -14,7 +14,7 @@ alertas de feedbacks críticos e um relatório semanal com médias e estatístic
 | Provedor | **Microsoft Azure** | Alinhado ao conteúdo da fase (Azure Functions, Application Insights) e ao crédito disponível |
 | Modelo de serviço | **FaaS (Azure Functions) + serviços gerenciados (PaaS)** | Sem servidores para operar; paga-se por uso |
 | Plano de execução | **Consumption (ou Flex Consumption)** | Escala a zero; custo próximo de zero neste volume |
-| Runtime | **Python 3.12**, modelo de programação v2 | Simples e consistente com o restante do grupo |
+| Runtime | **Java 21** + Maven, Azure Functions Java | Linguagem da pós-graduação; suporte oficial no Functions |
 | IaC | **Bicep** | Nativo do Azure; dispensa backend de state |
 | CI/CD | **GitHub Actions** (login OIDC no Azure) | Deploy automatizado sem segredos de longa duração |
 
@@ -60,7 +60,7 @@ alertas de feedbacks críticos e um relatório semanal com médias e estatístic
 | Key Vault | Segredos e configurações sensíveis (ex.: lista de e-mails dos admins). |
 
 As três funções ficam em um único Function App (um deploy, uma Managed Identity). A separação de
-responsabilidades está no código e nos gatilhos; cada função é um módulo independente em `src/functions/`.
+responsabilidades está no código e nos gatilhos; cada função é uma classe independente em `functions/src/main/java/.../function/`.
 
 ## 3. Regras de negócio
 
@@ -118,12 +118,11 @@ quantidade de avaliações por dia; quantidade de avaliações por urgência.
 
 - **Application Insights** (workspace-based) com logs estruturados e rastreamento distribuído.
 - **Dashboard/Workbook**: invocações, falhas, duração, taxa de sucesso por função, requisições 4xx/5xx.
-- **Alertas** (Azure Monitor → Action Group → e-mail dos admins):
-  - Falhas de qualquer função ≥ 1 em 5 min
-  - HTTP 5xx ≥ 1 em 5 min
-  - Duração p95 acima do limite
-  - Relatório semanal sem execução em 8 dias
-  - Custo acima do orçamento (Cost Management)
+- **Alertas** (Azure Monitor → Action Group → e-mail dos admins), definidos em `infra/modules/alerts.bicep`:
+  - HTTP 5xx ≥ 1 em 5 min (métrica do Function App)
+  - Execução com falha ou exceção em qualquer função, em 5 min (consulta no Application Insights)
+  - Orçamento mensal com aviso aos 80% (opcional, parâmetro `budgetAmount`)
+  - Limitação: alertas de log aceitam janela de no máximo 2 dias, então "relatório semanal não executou" não é alertável; uma falha na execução dele cai no alerta de falhas.
 - **Health**: endpoint de saúde opcional e teste de disponibilidade.
 
 ## 8. Estrutura do repositório
@@ -136,16 +135,16 @@ GitHub reconhece) e usam `working-directory: fase-4` e filtro de caminho `fase-4
 fase-4/
 ├── README.md
 ├── PLANEJAMENTO.md
-├── src/
-│   ├── function_app.py          # registra as 3 funções
+├── functions/                   # projeto Maven (Azure Functions, Java 21)
+│   ├── pom.xml
 │   ├── host.json
-│   ├── requirements.txt
-│   ├── functions/
-│   │   ├── receber_avaliacao.py
-│   │   ├── notificar_urgencia.py
-│   │   └── gerar_relatorio_semanal.py
-│   └── common/                  # urgência, e-mail, repositório Cosmos, logging
-├── tests/
+│   └── src/
+│       ├── main/java/br/com/fiap/feedback/
+│       │   ├── function/        # ReceberAvaliacao, NotificarUrgencia, GerarRelatorioSemanal
+│       │   ├── service/         # classificação de urgência, relatório, e-mail
+│       │   ├── repository/      # acesso ao Cosmos DB
+│       │   └── model/           # Avaliacao, Urgencia
+│       └── test/java/br/com/fiap/feedback/   # JUnit 5
 ├── infra/                       # Bicep
 │   ├── main.bicep
 │   ├── main.bicepparam.example
@@ -153,7 +152,7 @@ fase-4/
 └── docs/                        # diagramas, prints, roteiro do vídeo
 
 .github/workflows/               # na raiz do repositório
-├── fase-4-ci.yml                # lint + testes + bicep build/what-if
+├── fase-4-ci.yml                # mvn verify + bicep build/what-if
 └── fase-4-deploy.yml            # infra + publicação das funções
 ```
 
@@ -161,14 +160,14 @@ fase-4/
 
 Os comandos abaixo partem de `fase-4/`.
 
-Pré-requisitos: assinatura Azure, Azure CLI, Azure Functions Core Tools v4, Python 3.12.
+Pré-requisitos: assinatura Azure, Azure CLI, Azure Functions Core Tools v4, JDK 21 e Maven 3.9+.
 
 ```bash
 az login
 az group create -n rg-feedback -l brazilsouth --tags projeto=feedback
 cp infra/main.bicepparam.example infra/main.bicepparam      # editar e-mails dos admins
 az deployment group create -g rg-feedback -f infra/main.bicep -p infra/main.bicepparam
-cd src && func azure functionapp publish <nome-do-function-app>
+cd functions && mvn clean package azure-functions:deploy   # appName vem do output da infra
 ```
 
 **Deploy automatizado:** push na `main` → `fase-4-ci.yml` (lint, testes, `bicep build`, `what-if`) →
@@ -183,7 +182,7 @@ curl -X POST "https://<app>.azurewebsites.net/api/avaliacao" \
   -d '{"descricao":"Aula confusa","nota":2}'
 ```
 
-Testes locais: `pip install -r requirements-dev.txt && pytest`; execução local com `func start`.
+Testes locais: `cd functions && mvn test`; execução local com `mvn clean package azure-functions:run`.
 
 ## 10. Documentação das funções
 

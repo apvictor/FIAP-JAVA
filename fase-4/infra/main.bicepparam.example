@@ -1,0 +1,8 @@
+using './main.bicep'
+
+// Copie para main.bicepparam (ignorado pelo git) e ajuste.
+param adminEmails = [
+  'admin1@exemplo.com'
+  'admin2@exemplo.com'
+]
+param budgetAmount = 0

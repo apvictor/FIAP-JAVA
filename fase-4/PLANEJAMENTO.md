@@ -2,7 +2,7 @@
 
 **Prazo final: 17/11/2026** (janela de entrega: 09/09 a 17/11/2026). Meta interna de entrega: **16/11**, com folga de 24 h.
 
-**Stack decidida:** Azure · Azure Functions (Python 3.12) · Cosmos DB serverless · Communication Services Email · Application Insights · Bicep · GitHub Actions.
+**Stack decidida:** Azure · Azure Functions (Java 21 + Maven) · Cosmos DB serverless · Communication Services Email · Application Insights · Bicep · GitHub Actions.
 
 ## Calendário (a partir de 06/10/2026)
 
@@ -38,7 +38,7 @@ Congelamento de funcionalidades: **10/11**. Depois disso, só correções e docu
 - [x] Decidir cloud: **Azure**
 - [ ] Confirmar assinatura (Azure for Students ou outra) e saldo; ver regiões/SKUs permitidos
 - [ ] Definir equipe, papéis e canal de comunicação
-- [ ] Criar repositório **público** no GitHub; `main` protegida; PRs obrigatórios; `.gitignore` (`*.bicepparam`, `local.settings.json`, `.env`, `.venv`)
+- [ ] Criar repositório **público** no GitHub; `main` protegida; PRs obrigatórios; `.gitignore` (`*.bicepparam`, `local.settings.json`, `.env`, `target/`)
 - [ ] Criar orçamento (Cost Management) com alerta
 - [ ] Criar estrutura de pastas e primeiro commit
 
@@ -46,7 +46,7 @@ Congelamento de funcionalidades: **10/11**. Depois disso, só correções e docu
 - [ ] Resource group `rg-feedback` com tags
 - [ ] Cosmos DB (serverless), database + container `avaliacoes` (partition key `/dia`)
 - [ ] Communication Services + Email Service + domínio gerenciado Azure; anotar o remetente
-- [ ] Function App (Linux, Consumption/Flex, Python 3.12) + Storage Account
+- [ ] Function App (Linux, Consumption/Flex, Java 21) + Storage Account
 - [ ] Key Vault
 - [ ] Log Analytics + Application Insights
 - [ ] Parâmetros: e-mails admin, limiares de urgência, região
@@ -59,22 +59,23 @@ Congelamento de funcionalidades: **10/11**. Depois disso, só correções e docu
 - [ ] Revisão: nenhum segredo no repositório
 
 ### Fase 3 — Funções serverless
-- [ ] `common`: classificação de urgência, cliente Cosmos, envio de e-mail, logger (com testes)
+- [ ] Criar `functions/pom.xml` (azure-functions-java-library, azure-cosmos, azure-communication-email, azure-identity) e `host.json`
+- [ ] Núcleo: `Urgencia`/`Avaliacao`, serviço de classificação, repositório Cosmos, serviço de e-mail (com testes)
 - [ ] `receber_avaliacao` (HTTP): validação, gravação, 201/400
 - [ ] `notificar_urgencia` (Cosmos DB trigger): ignora não críticas, envia e-mail, idempotente
 - [ ] `gerar_relatorio_semanal` (Timer `0 0 11 * * 1` UTC = segunda 08:00 BRT): consulta 7 dias, média, contagem por dia e por urgência, e-mail
 - [ ] Permitir execução manual do relatório (HTTP admin ou `func` manual) para demonstração
-- [ ] Testes unitários com cobertura mínima de 80% nas regras de negócio
-- [ ] Teste local com `func start` + emulador/conta de dev
+- [ ] Testes unitários (JUnit 5, Mockito) com cobertura mínima de 80% nas regras de negócio (JaCoCo)
+- [ ] Teste local com `mvn azure-functions:run` + conta de dev
 
 ### Fase 4 — CI/CD
-- [ ] `fase-4-ci.yml` (em `.github/workflows/` na raiz do repo; `paths: fase-4/**`): ruff, pytest, `az bicep build`, `what-if`
+- [ ] `fase-4-ci.yml` (em `.github/workflows/` na raiz do repo; `paths: fase-4/**`): `mvn verify`, `az bicep build`, `what-if`
 - [ ] `fase-4-deploy.yml` (`working-directory: fase-4`): deploy da infra + `Azure/functions-action`
 - [ ] Provar o fluxo: alterar uma função → push → deploy automático
 
 ### Fase 5 — Monitoramento e alertas
 - [ ] Workbook/dashboard (invocações, falhas, duração, 4xx/5xx)
-- [ ] Alertas: falhas de função, 5xx, duração, relatório ausente → Action Group por e-mail
+- [ ] Alertas (já escritos em `alerts.bicep`): falhas de função, 5xx, orçamento → Action Group por e-mail
 - [ ] Simular falha e comprovar o e-mail de alerta
 
 ### Fase 6 — Testes ponta a ponta e documentação
