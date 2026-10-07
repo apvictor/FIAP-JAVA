@@ -235,4 +235,6 @@ Link do vídeo: `TODO`
 
 ## 13. Equipe
 
-`TODO` — nomes e RMs.
+| Nome | RM | Responsabilidades |
+|---|---|---|
+| Armando Victor Pereira Santos | `TODO` | Projeto individual: arquitetura, infraestrutura, funções, CI/CD, monitoramento, documentação e vídeo |

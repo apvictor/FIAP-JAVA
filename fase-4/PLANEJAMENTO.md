@@ -35,12 +35,19 @@ Congelamento de funcionalidades: **10/11**. Depois disso, só correções e docu
 ## Fases e tarefas
 
 ### Fase 0 — Fundação (06/10 – 11/10)
+> Adiantado: o código das Fases 1 (Bicep) e 3 (funções Java) já está escrito e validado localmente; falta implantar e testar no Azure.
+
 - [x] Decidir cloud: **Azure**
-- [ ] Confirmar assinatura (Azure for Students ou outra) e saldo; ver regiões/SKUs permitidos
-- [ ] Definir equipe, papéis e canal de comunicação
-- [ ] Criar repositório **público** no GitHub; `main` protegida; PRs obrigatórios; `.gitignore` (`*.bicepparam`, `local.settings.json`, `.env`, `target/`)
-- [ ] Criar orçamento (Cost Management) com alerta
-- [ ] Criar estrutura de pastas e primeiro commit
+- [x] Assinatura: **Azure for Students**, US$ 100, expira em 07/10/2027, tenant **SENAC.BR** (conta `armando.vpsantos@sp.senac.br`)
+- [x] Verificação da assinatura (1ª rodada): regiões permitidas por policy = `brazilsouth`, `italynorth`, `belgiumcentral`, `chilecentral`, `francecentral` (**usar `brazilsouth`**); criação de app registration **permitida** (OIDC viável); providers não registrados
+- [x] Providers registrados e verificação concluída (2ª rodada): Cosmos DB serverless criado com sucesso em `brazilsouth`. **Não verificado ainda:** Function App Linux Consumption e Communication Services Email (só aparecem no primeiro deploy)
+- [x] Equipe: projeto **individual** (Armando Victor Pereira Santos); todos os papéis ficam com uma pessoa
+- [x] Repositório no GitHub criado e `.gitignore` configurado (`*.bicepparam`, `local.settings.json`, `.env`, `target/`)
+- [x] `main` protegida por ruleset `proteger-main` (PR obrigatório com 0 aprovações, sem force push, sem exclusão)
+- [x] Repositório público (verificado pela API do GitHub)
+- [x] Sem colaboradores (projeto individual)
+- [x] Orçamento `orcamento-fase4` criado (US$ 25/mês, 01/10 a 30/12/2026). Conferir escopo = assinatura e alertas de 50% e 80%
+- [x] Criar estrutura de pastas e primeiro commit
 
 ### Fase 1 — Infraestrutura base (Bicep)
 - [ ] Resource group `rg-feedback` com tags
@@ -101,21 +108,20 @@ Congelamento de funcionalidades: **10/11**. Depois disso, só correções e docu
 - [ ] README completo, link do vídeo funcionando
 - [ ] Submeter na plataforma antes do prazo
 
-## Divisão sugerida (ajustar ao tamanho do grupo)
+## Papéis
 
-| Papel | Escopo |
-|---|---|
-| Infra/Segurança | Fases 1, 2, 5 |
-| Backend | Fase 3 |
-| DevOps/QA | Fases 4, 6 |
-| Documentação/Vídeo | Fases 6, 7, 8 |
+Projeto individual: Infra/Segurança, Backend, DevOps/QA e Documentação/Vídeo ficam com uma pessoa.
+Para caber no prazo, a ordem de prioridade é: (1) infra + funções funcionando, (2) deploy automatizado,
+(3) monitoramento e alerta real, (4) documentação, (5) vídeo. Itens opcionais só se sobrar tempo.
 
 ## Riscos e mitigação
 
 | Risco | Mitigação |
 |---|---|
 | Assinatura de estudante com região/SKU restrito (Cosmos, Functions) | Testar criação dos recursos na Fase 0/1; ter região alternativa |
-| Sem permissão para criar app registration (OIDC) | Plano B: service principal com secret |
+| App registration (OIDC) no tenant do Senac | Verificado: permitido. Se mudar, plano B: `publish-profile` do Function App como secret no GitHub |
+| Regiões limitadas por policy (5 regiões) e possível falta de capacidade do Cosmos/Functions em `brazilsouth` | Alternativas permitidas: `chilecentral`, `francecentral`, `italynorth`, `belgiumcentral` |
+| Carga de trabalho concentrada em uma pessoa | Seguir a ordem de prioridade; congelar funcionalidades em 10/11; adiantar o que for possível antes dos marcos |
 | Limites do domínio gerenciado de e-mail (taxa, spam) | Poucos e-mails; avisar admins para checar spam; domínio próprio só se necessário |
 | Cosmos trigger acorda a função em toda avaliação | Aceitável no volume; ignora não críticas no código |
 | Estouro de créditos | Orçamento com alerta; remover o resource group após o vídeo |
