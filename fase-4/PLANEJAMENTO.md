@@ -59,14 +59,14 @@ Congelamento de funcionalidades: **10/11**. Depois disso, só correções e docu
 - [ ] Revisão: nenhum segredo no repositório
 
 ### Fase 3 — Funções serverless
-- [ ] Criar `functions/pom.xml` (azure-functions-java-library, azure-cosmos, azure-communication-email, azure-identity) e `host.json`
-- [ ] Núcleo: `Urgencia`/`Avaliacao`, serviço de classificação, repositório Cosmos, serviço de e-mail (com testes)
-- [ ] `receber_avaliacao` (HTTP): validação, gravação, 201/400
-- [ ] `notificar_urgencia` (Cosmos DB trigger): ignora não críticas, envia e-mail, idempotente
-- [ ] `gerar_relatorio_semanal` (Timer `0 0 11 * * 1` UTC = segunda 08:00 BRT): consulta 7 dias, média, contagem por dia e por urgência, e-mail
-- [ ] Permitir execução manual do relatório (HTTP admin ou `func` manual) para demonstração
-- [ ] Testes unitários (JUnit 5, Mockito) com cobertura mínima de 80% nas regras de negócio (JaCoCo)
-- [ ] Teste local com `mvn azure-functions:run` + conta de dev
+- [x] Criar `functions/pom.xml` (azure-functions-java-library, azure-cosmos, azure-communication-email, azure-identity) e `host.json`
+- [x] Núcleo: `Urgencia`/`Avaliacao`, serviço de classificação, repositório Cosmos, serviço de e-mail (com testes)
+- [x] `receber_avaliacao` (HTTP): validação, gravação, 201/400
+- [x] `notificar_urgencia` (Cosmos DB trigger): ignora não críticas, envia e-mail, idempotente
+- [x] `gerar_relatorio_semanal` (Timer `0 0 11 * * 1` UTC = segunda 08:00 BRT): consulta 7 dias, média, contagem por dia e por urgência, e-mail
+- [x] Execução manual do relatório (`gerar_relatorio_manual`) para demonstração
+- [x] Testes unitários (JUnit 5, fakes em memória) com cobertura mínima de 80% nas regras de negócio (JaCoCo)
+- [ ] Teste local com `mvn azure-functions:run` + conta de dev (depende da infra implantada)
 
 ### Fase 4 — CI/CD
 - [ ] `fase-4-ci.yml` (em `.github/workflows/` na raiz do repo; `paths: fase-4/**`): `mvn verify`, `az bicep build`, `what-if`

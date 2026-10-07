@@ -1,0 +1,17 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "java",
+    "COSMOS_CONNECTION__accountEndpoint": "https://<conta>.documents.azure.com:443/",
+    "COSMOS_ENDPOINT": "https://<conta>.documents.azure.com:443/",
+    "COSMOS_DATABASE": "feedback",
+    "COSMOS_CONTAINER": "avaliacoes",
+    "COSMOS_LEASES_CONTAINER": "leases",
+    "EMAIL_SENDER": "DoNotReply@<dominio>.azurecomm.net",
+    "ACS_CONNECTION_STRING": "endpoint=https://<acs>.communication.azure.com/;accesskey=<chave>",
+    "ADMIN_EMAILS": "admin1@exemplo.com,admin2@exemplo.com",
+    "URGENCIA_CRITICA_ATE": "3",
+    "URGENCIA_MEDIA_ATE": "6"
+  }
+}

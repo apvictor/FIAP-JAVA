@@ -53,13 +53,14 @@ alertas de feedbacks críticos e um relatório semanal com médias e estatístic
 |---|---|
 | `receber_avaliacao` | Validar payload, classificar urgência, persistir. **Não** envia e-mail. |
 | `notificar_urgencia` | Reagir ao Change Feed e enviar e-mail de urgência para avaliações críticas. |
-| `gerar_relatorio_semanal` | Agregar a semana e enviar o relatório. |
+| `gerar_relatorio_semanal` | Agregar a semana e enviar o relatório (timer). |
+| `gerar_relatorio_manual` | Gatilho HTTP alternativo que reaproveita o mesmo serviço do relatório (demonstração/reenvio). |
 | Cosmos DB | Persistência; o Change Feed desacopla recebimento de notificação. |
 | Communication Services Email | Envio de e-mails. |
 | Application Insights / Azure Monitor | Telemetria, dashboard e alertas operacionais. |
 | Key Vault | Segredos e configurações sensíveis (ex.: lista de e-mails dos admins). |
 
-As três funções ficam em um único Function App (um deploy, uma Managed Identity). A separação de
+As funções ficam em um único Function App (um deploy, uma Managed Identity). A separação de
 responsabilidades está no código e nos gatilhos; cada função é uma classe independente em `functions/src/main/java/.../function/`.
 
 ## 3. Regras de negócio
@@ -137,12 +138,15 @@ fase-4/
 ├── PLANEJAMENTO.md
 ├── functions/                   # projeto Maven (Azure Functions, Java 21)
 │   ├── pom.xml
+│   ├── local.settings.json.example
 │   ├── host.json
 │   └── src/
 │       ├── main/java/br/com/fiap/feedback/
-│       │   ├── function/        # ReceberAvaliacao, NotificarUrgencia, GerarRelatorioSemanal
-│       │   ├── service/         # classificação de urgência, relatório, e-mail
+│       │   ├── function/        # gatilhos finos: HTTP, Change Feed, Timer
+│       │   ├── service/         # regras de negócio (urgência, registro, relatório, notificação)
+│       │   ├── email/           # composição dos e-mails e envio (Azure Communication Services)
 │       │   ├── repository/      # acesso ao Cosmos DB
+│       │   ├── config/          # leitura das variáveis de ambiente
 │       │   └── model/           # Avaliacao, Urgencia
 │       └── test/java/br/com/fiap/feedback/   # JUnit 5
 ├── infra/                       # Bicep
@@ -167,7 +171,7 @@ az login
 az group create -n rg-feedback -l brazilsouth --tags projeto=feedback
 cp infra/main.bicepparam.example infra/main.bicepparam      # editar e-mails dos admins
 az deployment group create -g rg-feedback -f infra/main.bicep -p infra/main.bicepparam
-cd functions && mvn clean package azure-functions:deploy   # appName vem do output da infra
+cd functions && mvn clean package azure-functions:deploy -DfunctionAppName=<functionAppName> -DresourceGroup=rg-feedback
 ```
 
 **Deploy automatizado:** push na `main` → `fase-4-ci.yml` (lint, testes, `bicep build`, `what-if`) →
@@ -182,11 +186,42 @@ curl -X POST "https://<app>.azurewebsites.net/api/avaliacao" \
   -d '{"descricao":"Aula confusa","nota":2}'
 ```
 
-Testes locais: `cd functions && mvn test`; execução local com `mvn clean package azure-functions:run`.
+Testes locais: `cd functions && mvn verify` (relatório de cobertura em `target/site/jacoco/index.html`).
+Execução local: copie `local.settings.json.example` para `local.settings.json`, faça `az login` (o acesso ao Cosmos usa `DefaultAzureCredential`) e rode `mvn clean package azure-functions:run`.
 
 ## 10. Documentação das funções
 
-`TODO` — preencher por função: gatilho, entrada/saída, App Settings, permissões, timeout.
+Código em `functions/src/main/java/br/com/fiap/feedback/`. As classes `function/*` apenas interpretam
+o gatilho e delegam; as regras ficam em `service/*` e são testadas sem Azure (32 testes JUnit 5).
+
+### `receber_avaliacao` — HTTP `POST /api/avaliacao`
+- **Entrada:** JSON `{ "descricao": string (1–1000), "nota": inteiro 0–10 }`. Notas como `"5"`, `5.5` ou fora da faixa são rejeitadas.
+- **Saída:** `201 { id, urgencia }`; `400 { erro }` para entrada inválida; `500` para falha interna (detalhes só no log).
+- **Faz:** valida → classifica (`ClassificadorUrgencia`) → grava no Cosmos (`RegistroAvaliacaoService`). Não envia e-mail.
+- **Permissões:** escrita no database do Cosmos. **Auth:** chave de função.
+
+### `notificar_urgencia` — Cosmos DB Change Feed
+- **Entrada:** lote de documentos do container `avaliacoes` (lease no container `leases`).
+- **Faz:** para cada avaliação `CRITICA`, envia e-mail aos administradores com descrição, urgência e data de envio (`NotificacaoUrgenciaService`).
+- **Garantia:** o Change Feed entrega "pelo menos uma vez", então um e-mail pode se repetir. Não conte com reprocessamento automático se o envio falhar: a exceção é registrada e dispara o alerta de falhas, e o reenvio é manual. A confirmação desse comportamento fica para o teste no Azure.
+- **Permissões:** leitura/escrita de leases no Cosmos; connection string do e-mail via Key Vault.
+
+### `gerar_relatorio_semanal` — Timer `0 0 11 * * 1` (segunda 11:00 UTC = 08:00 BRT)
+- **Faz:** consulta os últimos 7 dias (incluindo hoje, em UTC), calcula média, quantidade por dia (dias vazios incluídos) e por urgência, e envia por e-mail com a lista de avaliações (`RelatorioService` + `EnvioRelatorioService`).
+- **Permissões:** leitura no Cosmos; envio de e-mail.
+
+### `gerar_relatorio_manual` — HTTP `POST /api/relatorio?dias=7`
+- Dispara o mesmo `EnvioRelatorioService` sob demanda (1–90 dias). Existe para demonstração e reenvio; não duplica regra de negócio.
+
+### App Settings
+
+| Nome | Origem | Uso |
+|---|---|---|
+| `COSMOS_ENDPOINT`, `COSMOS_CONNECTION__accountEndpoint` | Bicep | Endpoint do Cosmos (acesso por identidade) |
+| `COSMOS_DATABASE`, `COSMOS_CONTAINER`, `COSMOS_LEASES_CONTAINER` | Bicep | Nomes dos recursos |
+| `EMAIL_SENDER` | Bicep | Remetente do domínio gerenciado |
+| `ACS_CONNECTION_STRING`, `ADMIN_EMAILS` | Key Vault | Envio de e-mail e destinatários |
+| `URGENCIA_CRITICA_ATE`, `URGENCIA_MEDIA_ATE` | Bicep | Limiares de urgência (padrão 3 e 6) |
 
 ## 11. Custos
 
