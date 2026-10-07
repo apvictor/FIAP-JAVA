@@ -1,0 +1,32 @@
+# Segredos e configuração local
+local.settings.json
+*.bicepparam
+!*.bicepparam.example
+.env
+.env.*
+*.tfvars
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Azure Functions
+.python_packages/
+.azure/
+__azurite_db_*
+__blobstorage__/
+__queuestorage__/
+
+# Editor / SO
+.vscode/
+.idea/
+.DS_Store
+
+# Artefatos
+*.zip
