@@ -38,7 +38,7 @@ Congelamento de funcionalidades: **10/11**. Depois disso, só correções e docu
 > Adiantado: o código das Fases 1 (Bicep) e 3 (funções Java) já está escrito e validado localmente; falta implantar e testar no Azure.
 
 - [x] Decidir cloud: **Azure**
-- [x] Assinatura: **Azure for Students**, US$ 100, expira em 07/10/2027, tenant **SENAC.BR** (conta `armando.vpsantos@sp.senac.br`)
+- [x] Assinatura: **Azure for Students**, US$ 100, expira em 07/10/2027, tenant institucional **SENAC.BR**
 - [x] Verificação da assinatura (1ª rodada): regiões permitidas por policy = `brazilsouth`, `italynorth`, `belgiumcentral`, `chilecentral`, `francecentral` (**usar `brazilsouth`**); criação de app registration **permitida** (OIDC viável); providers não registrados
 - [x] Providers registrados e verificação concluída (2ª rodada): Cosmos DB serverless criado com sucesso em `brazilsouth`. **Não verificado ainda:** Function App Linux Consumption e Communication Services Email (só aparecem no primeiro deploy)
 - [x] Equipe: projeto **individual** (Armando Victor Pereira Santos); todos os papéis ficam com uma pessoa
@@ -50,20 +50,21 @@ Congelamento de funcionalidades: **10/11**. Depois disso, só correções e docu
 - [x] Criar estrutura de pastas e primeiro commit
 
 ### Fase 1 — Infraestrutura base (Bicep)
-- [ ] Resource group `rg-feedback` com tags
-- [ ] Cosmos DB (serverless), database + container `avaliacoes` (partition key `/dia`)
-- [ ] Communication Services + Email Service + domínio gerenciado Azure; anotar o remetente
-- [ ] Function App (Linux, Consumption/Flex, Java 21) + Storage Account
-- [ ] Key Vault
-- [ ] Log Analytics + Application Insights
-- [ ] Parâmetros: e-mails admin, limiares de urgência, região
+> **Implantada em 14/10/2026** no `rg-feedback` (`brazilsouth`), deployment `deploy-inicial`: 18 recursos, sem erros. Function App Linux Consumption e Communication Services Email foram aceitos pela assinatura. Referências ao Key Vault resolvidas após reiniciar o app (propagação do RBAC).
+- [x] Resource group `rg-feedback` com tags
+- [x] Cosmos DB (serverless), database + container `avaliacoes` (partition key `/dia`)
+- [x] Communication Services + Email Service + domínio gerenciado Azure; anotar o remetente
+- [x] Function App (Linux, Consumption/Flex, Java 21) + Storage Account
+- [x] Key Vault
+- [x] Log Analytics + Application Insights
+- [x] Parâmetros: e-mails admin, limiares de urgência, região
 
 ### Fase 2 — Segurança e governança
-- [ ] Managed Identity do Function App com roles mínimas (Cosmos data, Key Vault, envio de e-mail)
-- [ ] Desabilitar chaves locais do Cosmos DB; HTTPS only, TLS 1.2, FTP off
-- [ ] Segredos no Key Vault com referências nas App Settings
-- [ ] App registration/federated credential para GitHub OIDC (**risco:** assinaturas de estudante podem bloquear; plano B: service principal com secret no GitHub)
-- [ ] Revisão: nenhum segredo no repositório
+- [x] Managed Identity do Function App com roles mínimas (Cosmos data restrito ao database; Key Vault Secrets User). O envio de e-mail usa a connection string guardada no Key Vault
+- [x] Desabilitar chaves locais do Cosmos DB; HTTPS only, TLS 1.2, FTP off
+- [x] Segredos no Key Vault com referências nas App Settings
+- [ ] App registration/federated credential para GitHub OIDC (permitido no tenant; criar na Fase 4) 
+- [x] Revisão: nenhum segredo no repositório
 
 ### Fase 3 — Funções serverless
 - [x] Criar `functions/pom.xml` (azure-functions-java-library, azure-cosmos, azure-communication-email, azure-identity) e `host.json`
