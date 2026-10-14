@@ -70,13 +70,14 @@ Congelamento de funcionalidades: **10/11**. Depois disso, só correções e docu
 - [x] Criar `functions/pom.xml` (azure-functions-java-library, azure-cosmos, azure-communication-email, azure-identity) e `host.json`
 - [x] Núcleo: `Urgencia`/`Avaliacao`, serviço de classificação, repositório Cosmos, serviço de e-mail (com testes)
 - [x] `receber_avaliacao` (HTTP): validação, gravação, 201/400
-- [x] `notificar_urgencia` (Cosmos DB trigger): ignora não críticas, envia e-mail, idempotente
+- [x] `notificar_urgencia` (Cosmos DB trigger): ignora não críticas e envia e-mail (entrega "pelo menos uma vez", pode repetir em reprocessamento)
 - [x] `gerar_relatorio_semanal` (Timer `0 0 11 * * 1` UTC = segunda 08:00 BRT): consulta 7 dias, média, contagem por dia e por urgência, e-mail
 - [x] Execução manual do relatório (`gerar_relatorio_manual`) para demonstração
 - [x] Testes unitários (JUnit 5, fakes em memória) com cobertura mínima de 80% nas regras de negócio (JaCoCo)
 - [x] Funções publicadas no Function App (`mvn azure-functions:deploy`) e verificadas no Azure em 14/10/2026: 4 funções ativas; `POST /api/avaliacao` (400/401/201), nota 9 sem e-mail, nota 2 acionou `notificar_urgencia` via Change Feed e enviou 1 e-mail; `gerar_relatorio_manual` devolveu total 2 e média 5,5
-- [ ] Confirmar o recebimento dos e-mails (urgência) na caixa de entrada/spam dos administradores
+- [x] Recebimento dos e-mails confirmado pelo titular em 14/10/2026
 - [ ] Teste local com `mvn azure-functions:run` (opcional)
+- [ ] Observar a primeira execução real do timer `gerar_relatorio_semanal` (segunda 19/10, 11:00 UTC) nos logs e no e-mail; até lá só o gatilho manual foi exercitado
 
 ### Fase 4 — CI/CD
 - [ ] `fase-4-ci.yml` (em `.github/workflows/` na raiz do repo; `paths: fase-4/**`): `mvn verify`, `az bicep build`, `what-if`
