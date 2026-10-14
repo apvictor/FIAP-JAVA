@@ -164,30 +164,73 @@ fase-4/
 
 Os comandos abaixo partem de `fase-4/`.
 
-Pré-requisitos: assinatura Azure, Azure CLI, Azure Functions Core Tools v4, JDK 21 e Maven 3.9+.
+Pré-requisitos: assinatura Azure, Azure CLI (com `az bicep install`), JDK 21 e Maven 3.9+.
+O Azure Functions Core Tools só é necessário para executar as funções localmente.
+
+### 9.1 Preparar a assinatura (uma vez)
 
 ```bash
-az login
-az group create -n rg-feedback -l brazilsouth --tags projeto=feedback
-cp infra/main.bicepparam.example infra/main.bicepparam      # editar e-mails dos admins
-az deployment group create -g rg-feedback -f infra/main.bicep -p infra/main.bicepparam
-cd functions && mvn clean package azure-functions:deploy -DfunctionAppName=<functionAppName> -DresourceGroup=rg-feedback
+az login --tenant <tenant-id>
+./infra/scripts/verificar-assinatura.sh brazilsouth   # registra providers e valida Cosmos serverless, região e app registration
 ```
 
-**Deploy automatizado:** push na `main` → `fase-4-ci.yml` (lint, testes, `bicep build`, `what-if`) →
-`fase-4-deploy.yml` (implanta a infra e publica as funções com `Azure/functions-action`).
-Variáveis do repositório: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`.
+Em assinaturas Azure for Students há policy de regiões; este projeto usa `brazilsouth`.
 
-### Testar
+### 9.2 Infraestrutura (Bicep)
 
 ```bash
-curl -X POST "https://<app>.azurewebsites.net/api/avaliacao" \
-  -H "x-functions-key: $FUNCTION_KEY" -H "Content-Type: application/json" \
+az group create -n rg-feedback -l brazilsouth --tags projeto=feedback-aulas ambiente=demo
+cp infra/main.bicepparam.example infra/main.bicepparam      # informar os e-mails dos administradores (arquivo ignorado pelo git)
+az deployment group what-if -g rg-feedback -f infra/main.bicep -p infra/main.bicepparam   # opcional: prévia
+az deployment group create  -g rg-feedback -n deploy-inicial -f infra/main.bicep -p infra/main.bicepparam \
+  --query properties.outputs
+```
+
+Cria 18 recursos: Cosmos DB, Communication Services (e-mail), Key Vault, Function App, Storage, Log Analytics,
+Application Insights, Action Group e alertas. Os outputs trazem `functionAppName`, `functionAppHost` e `senderAddress`.
+
+Logo após o primeiro deploy, as referências do Function App ao Key Vault podem aparecer como
+`AccessToKeyVaultDenied` até a permissão propagar. Reinicie o app: `az functionapp restart -g rg-feedback -n <functionAppName>`.
+
+### 9.3 Funções (Maven)
+
+```bash
+cd functions
+mvn clean package azure-functions:deploy -DfunctionAppName=<functionAppName> -DresourceGroup=rg-feedback
+az functionapp function list -g rg-feedback -n <functionAppName> -o table   # deve listar as 4 funções
+```
+
+### 9.4 Deploy automatizado (CI/CD)
+
+Planejado para a Fase 4 do [PLANEJAMENTO.md](PLANEJAMENTO.md): `fase-4-ci.yml` (testes, `bicep build`, `what-if`)
+e `fase-4-deploy.yml` (infra e publicação das funções, com login OIDC no Azure).
+
+### 9.5 Testar
+
+```bash
+APP=<functionAppName>
+KEY=$(az functionapp function keys list -g rg-feedback -n $APP --function-name receber_avaliacao --query default -o tsv)
+
+# avaliação crítica (nota 0 a 3): gera e-mail de urgência aos administradores
+curl -X POST "https://$APP.azurewebsites.net/api/avaliacao" \
+  -H "x-functions-key: $KEY" -H "Content-Type: application/json" \
   -d '{"descricao":"Aula confusa","nota":2}'
+
+# relatório sob demanda (mesmo envio do relatório semanal)
+KEY=$(az functionapp function keys list -g rg-feedback -n $APP --function-name gerar_relatorio_manual --query default -o tsv)
+curl -X POST "https://$APP.azurewebsites.net/api/relatorio?dias=7" -H "x-functions-key: $KEY"
 ```
+
+Para acompanhar as execuções: Application Insights (`appi-feedback`) → *Logs*, consultando `traces` por `operation_Name`.
 
 Testes locais: `cd functions && mvn verify` (relatório de cobertura em `target/site/jacoco/index.html`).
 Execução local: copie `local.settings.json.example` para `local.settings.json`, faça `az login` (o acesso ao Cosmos usa `DefaultAzureCredential`) e rode `mvn clean package azure-functions:run`.
+
+### 9.6 Remover tudo
+
+```bash
+az group delete -n rg-feedback --yes --no-wait
+```
 
 ## 10. Documentação das funções
 
@@ -203,7 +246,7 @@ o gatilho e delegam; as regras ficam em `service/*` e são testadas sem Azure (3
 ### `notificar_urgencia` — Cosmos DB Change Feed
 - **Entrada:** lote de documentos do container `avaliacoes` (lease no container `leases`).
 - **Faz:** para cada avaliação `CRITICA`, envia e-mail aos administradores com descrição, urgência e data de envio (`NotificacaoUrgenciaService`).
-- **Garantia:** o Change Feed entrega "pelo menos uma vez", então um e-mail pode se repetir. Não conte com reprocessamento automático se o envio falhar: a exceção é registrada e dispara o alerta de falhas, e o reenvio é manual. A confirmação desse comportamento fica para o teste no Azure.
+- **Garantia:** o Change Feed entrega "pelo menos uma vez", então um e-mail pode se repetir. Não conte com reprocessamento automático se o envio falhar: a exceção é registrada e dispara o alerta de falhas, e o reenvio é manual. Esse comportamento de falha ainda não foi testado no Azure.
 - **Permissões:** leitura/escrita de leases no Cosmos; connection string do e-mail via Key Vault.
 
 ### `gerar_relatorio_semanal` — Timer `0 0 11 * * 1` (segunda 11:00 UTC = 08:00 BRT)
