@@ -1,0 +1,131 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "## Plataforma de feedback — monitoramento\nInvocações, falhas, duração e erros HTTP das funções."
+      }
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "tr",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "label": "Período",
+            "type": 4,
+            "value": {
+              "durationMs": 86400000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 3600000
+                },
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 604800000
+                }
+              ],
+              "allowCustom": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "requests | summarize Invocacoes=count() by Funcao=operation_Name | order by Invocacoes desc",
+        "size": 0,
+        "title": "Invocações por função",
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "barchart"
+      },
+      "customWidth": "50"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "requests | summarize Invocacoes=count() by bin(timestamp, 15m), Funcao=operation_Name | render timechart",
+        "size": 0,
+        "title": "Invocações ao longo do tempo",
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "timechart"
+      },
+      "customWidth": "50"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "requests | where success == false | summarize Falhas=count() by Funcao=operation_Name | order by Falhas desc",
+        "size": 0,
+        "title": "Falhas por função",
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "barchart"
+      },
+      "customWidth": "50"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "exceptions | project Quando=timestamp, Funcao=operation_Name, Tipo=type, Mensagem=outerMessage | order by Quando desc | take 20",
+        "size": 0,
+        "title": "Exceções recentes",
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "table"
+      },
+      "customWidth": "50"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "requests | summarize Media=round(avg(duration),0), P95=round(percentile(duration,95),0) by Funcao=operation_Name",
+        "size": 0,
+        "title": "Duração (média e p95, ms)",
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "table"
+      },
+      "customWidth": "50"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "requests | where operation_Name == \"receber_avaliacao\" | summarize Total=count() by Codigo=tostring(resultCode) | order by Codigo asc",
+        "size": 0,
+        "title": "Respostas HTTP por código (4xx/5xx)",
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "piechart"
+      },
+      "customWidth": "50"
+    }
+  ],
+  "isLocked": false,
+  "fallbackResourceIds": [
+    "Azure Monitor"
+  ]
+}

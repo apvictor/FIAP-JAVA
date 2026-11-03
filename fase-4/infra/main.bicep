@@ -99,6 +99,11 @@ module alerts 'modules/alerts.bicep' = {
   }
 }
 
+module workbook 'modules/workbook.bicep' = {
+  name: 'workbook'
+  params: { location: location, prefix: prefix, tags: tags, appInsightsId: monitoring.outputs.appInsightsId }
+}
+
 output functionAppName string = functionapp.outputs.appName
 output functionAppHost string = functionapp.outputs.hostName
 output cosmosAccount string = cosmos.outputs.accountName
