@@ -93,19 +93,19 @@ Congelamento de funcionalidades: **10/11**. Depois disso, só correções e docu
 ### Fase 6 — Testes ponta a ponta e documentação
 - [x] E2E em 03/11/2026 (13:33 UTC): notas 1, 5 e 9 devolveram 201 (CRITICA, MEDIA, BAIXA); o Change Feed entregou 3 documentos e `notificar_urgencia` enviou 1 e-mail; recebimento de 1 e-mail de urgência confirmado pelo titular. Ciclo do alerta também confirmado por e-mail: Fired (13:17 UTC) e Resolved (13:33 UTC)
 - [x] Relatório validado em 03/11/2026 (`POST /api/relatorio?dias=30`): total 7, média 6,2857, período 05/10 a 03/11; confere com a soma manual (14/10: notas 9 e 2; 03/11: 9, 9, 1, 5, 9 = 44/7); e-mail do relatório recebido. Dados cobrem só 2 dias distintos (14/10 e 03/11). Nota: logo após mudança de configuração o host reinicia e a rota responde 404 por alguns minutos
-- [ ] Preencher README (seções 10, 12, 13), diagrama em `docs/` e prints
-- [ ] Revisão cruzada de código e documentação
+- [ ] README seções 12 e 13 (link do vídeo e RM) e prints em `docs/`. Seção 10 e diagrama (`docs/arquitetura.md`) concluídos
+- [x] Revisão cruzada de código e documentação em 03/11/2026, incluindo conferência contra o enunciado (`docs/ADJT - Fase 4 - Tech Challenge_rev.pdf`): todos os requisitos atendidos; divergência única é a rota `/api/avaliacao` vs `/avaliação`, documentada no README §4
 
 ### Fase 7 — Vídeo de demonstração (~8–10 min)
 1. **Contexto e arquitetura** (1 min): modelo de cloud e componentes
-2. **Portal Azure** (2 min): Function App com as 3 funções ativas, Cosmos DB, Key Vault, Managed Identity/RBAC
+2. **Portal Azure** (2 min): Function App com as 4 funções ativas, Cosmos DB, Key Vault, Managed Identity/RBAC
 3. **Fluxo ao vivo** (3 min): nota alta (sem e-mail), nota baixa (e-mail de urgência), payload inválido (400)
 4. **Relatório semanal** (1 min): execução manual + e-mail
 5. **CI/CD** (1 min): commit → pipeline → função atualizada
 6. **Monitoramento** (1 min): Application Insights + alerta disparado
 7. **Encerramento**: custos e remoção do resource group
 
-- [ ] Gravar com dados preparados; publicar (YouTube não listado) e colocar o link no README
+- [ ] Gravar com dados preparados (roteiro em `docs/roteiro-video.md`); publicar (YouTube não listado) e colocar o link no README
 - [ ] Só remover a infra após o vídeo aprovado
 
 ### Fase 8 — Entrega
