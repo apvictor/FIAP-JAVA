@@ -43,7 +43,7 @@ Congelamento de funcionalidades: **10/11**. Depois disso, só correções e docu
 - [x] Providers registrados e verificação concluída (2ª rodada): Cosmos DB serverless criado com sucesso em `brazilsouth`. **Não verificado ainda:** Function App Linux Consumption e Communication Services Email (só aparecem no primeiro deploy)
 - [x] Equipe: projeto **individual** (Armando Victor Pereira Santos); todos os papéis ficam com uma pessoa
 - [x] Repositório no GitHub criado e `.gitignore` configurado (`*.bicepparam`, `local.settings.json`, `.env`, `target/`)
-- [x] `main` protegida por ruleset `proteger-main` (PR obrigatório com 0 aprovações, sem force push, sem exclusão). Observação (03/11/2026): o ruleset tem bypass `always` para o papel Admin, então o dono do repositório consegue dar push direto na `main` (aconteceu com o commit do Workbook, sem CI prévio). Ajuste recomendado: bypass "Pull requests only"
+- [x] `main` protegida por ruleset `proteger-main` (PR obrigatório com 0 aprovações, sem force push, sem exclusão). Observação (03/11/2026): o ruleset tem bypass `always` para o papel Admin, então o dono do repositório consegue dar push direto na `main` (aconteceu com o commit do Workbook, sem CI prévio). Corrigido em 03/11/2026: bypass alterado para "Pull requests only" (push direto na `main` agora é bloqueado também para o admin)
 - [x] Repositório público (verificado pela API do GitHub)
 - [x] Sem colaboradores (projeto individual)
 - [x] Orçamento `orcamento-fase4` criado (US$ 25/mês, 01/10 a 30/12/2026). Conferir escopo = assinatura e alertas de 50% e 80%
@@ -80,10 +80,10 @@ Congelamento de funcionalidades: **10/11**. Depois disso, só correções e docu
 - [ ] Observar a primeira execução real do timer `gerar_relatorio_semanal` (segunda 19/10, 11:00 UTC) nos logs e no e-mail; até lá só o gatilho manual foi exercitado
 
 ### Fase 4 — CI/CD
-- [ ] Secrets `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `ADMIN_EMAILS_JSON` e variable `AZURE_RESOURCE_GROUP` no GitHub
-- [ ] `fase-4-ci.yml` (em `.github/workflows/` na raiz do repo; `paths: fase-4/**`): `mvn verify`, `az bicep build`, `what-if`
-- [ ] `fase-4-deploy.yml` (`working-directory: fase-4`): deploy da infra + `Azure/functions-action`
-- [ ] Provar o fluxo: alterar uma função → push → deploy automático
+- [x] Secrets `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `ADMIN_EMAILS_JSON` e variable `AZURE_RESOURCE_GROUP` no GitHub
+- [x] `fase-4-ci.yml` (em `.github/workflows/` na raiz do repo; `paths: fase-4/**`): `mvn verify`, `az bicep build`, `what-if`
+- [x] `fase-4-deploy.yml` (`working-directory: fase-4`): deploy da infra + `Azure/functions-action`
+- [x] Provar o fluxo: alterar uma função → PR → CI → merge → deploy automático. Verificado em 03/11/2026: PR #2 (CI verde), deploy run 41638570132 verde, `POST /api/avaliacao` devolveu 201 e o App Insights registrou a linha nova "Requisição recebida em receber_avaliacao". Observação: o GitHub emite o subject OIDC no formato com IDs (`repo:apvictor@61298212/FIAP-JAVA@1408642228:...`), por isso a identidade tem credenciais nesse formato além das de nome
 
 ### Fase 5 — Monitoramento e alertas
 - [x] Workbook `Feedback — saúde das funções` (`modules/workbook.bicep`) implantado em 03/11/2026 (deploy run 41640180687)
@@ -91,8 +91,8 @@ Congelamento de funcionalidades: **10/11**. Depois disso, só correções e docu
 - [x] Falha simulada em 03/11/2026: `COSMOS_CONTAINER` trocado para um nome inexistente por ~1,5 min, 3 POSTs devolveram 500 (13:12 UTC), valor restaurado e POST devolveu 201 (13:13). O alerta `alert-feedback-falhas-funcoes` disparou (`Fired`, 13:17:28 UTC) e o e-mail foi recebido pelo titular. Não comprovado: o alerta `alert-feedback-http-5xx` não disparou (a métrica `Http5xx` do host não conta o 500 devolvido pela função)
 
 ### Fase 6 — Testes ponta a ponta e documentação
-- [ ] E2E: enviar avaliações com notas 1, 5, 9; só a crítica gera e-mail
-- [ ] Relatório com dados de vários dias; validar números
+- [x] E2E em 03/11/2026 (13:33 UTC): notas 1, 5 e 9 devolveram 201 (CRITICA, MEDIA, BAIXA); o Change Feed entregou 3 documentos e `notificar_urgencia` enviou 1 e-mail; recebimento de 1 e-mail de urgência confirmado pelo titular. Ciclo do alerta também confirmado por e-mail: Fired (13:17 UTC) e Resolved (13:33 UTC)
+- [x] Relatório validado em 03/11/2026 (`POST /api/relatorio?dias=30`): total 7, média 6,2857, período 05/10 a 03/11; confere com a soma manual (14/10: notas 9 e 2; 03/11: 9, 9, 1, 5, 9 = 44/7); e-mail do relatório recebido. Dados cobrem só 2 dias distintos (14/10 e 03/11). Nota: logo após mudança de configuração o host reinicia e a rota responde 404 por alguns minutos
 - [ ] Preencher README (seções 10, 12, 13), diagrama em `docs/` e prints
 - [ ] Revisão cruzada de código e documentação
 
