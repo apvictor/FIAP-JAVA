@@ -4,8 +4,9 @@ Plataforma serverless no Azure onde estudantes avaliam aulas e administradores r
 alertas de feedbacks críticos e um relatório semanal com médias e estatísticas.
 
 > Prazo de entrega: 17/11/2026.
-> Status: planejamento. Veja [PLANEJAMENTO.md](PLANEJAMENTO.md) para o plano de entrega.
-> Itens marcados com `TODO` serão preenchidos durante a implementação.
+> Status: infraestrutura, funções, CI/CD e monitoramento implantados e verificados no Azure.
+> Faltam testes ponta a ponta finais, vídeo e entrega. Veja [PLANEJAMENTO.md](PLANEJAMENTO.md).
+> Itens marcados com `TODO` serão preenchidos até a entrega.
 
 ## 1. Modelo de cloud escolhido
 
@@ -108,7 +109,7 @@ quantidade de avaliações por dia; quantidade de avaliações por urgência.
 
 - **Managed Identity** no Function App; acesso ao Cosmos DB via RBAC de dados (chaves locais desabilitadas) e ao Key Vault via RBAC.
 - **Menor privilégio**: roles `Cosmos DB Built-in Data Contributor` restrita ao container, `Key Vault Secrets User`, e permissão de envio no Communication Services.
-- **Sem segredos no CI**: GitHub Actions usa federação OIDC; segredos da aplicação ficam no Key Vault (referências nas App Settings).
+- **Sem segredos no CI**: GitHub Actions usa federação OIDC com uma User-Assigned Managed Identity (`id-gh-fase4`, `Contributor` e `User Access Administrator` só no resource group); segredos da aplicação ficam no Key Vault (referências nas App Settings).
 - **Em trânsito**: HTTPS obrigatório, TLS mínimo 1.2, FTP desabilitado.
 - **Em repouso**: criptografia padrão do Azure no Cosmos DB e no Storage.
 - **Proteção da API**: chave de função (`authLevel: function`), validação rigorosa do payload, limite de tamanho do corpo.
@@ -118,11 +119,12 @@ quantidade de avaliações por dia; quantidade de avaliações por urgência.
 ## 7. Monitoramento
 
 - **Application Insights** (workspace-based) com logs estruturados e rastreamento distribuído.
-- **Dashboard/Workbook**: invocações, falhas, duração, taxa de sucesso por função, requisições 4xx/5xx.
+- **Workbook** `Feedback — saúde das funções` (`infra/modules/workbook.bicep`): invocações por função e ao longo do tempo, falhas, exceções recentes, duração média e p95, respostas HTTP por código.
 - **Alertas** (Azure Monitor → Action Group → e-mail dos admins), definidos em `infra/modules/alerts.bicep`:
   - HTTP 5xx ≥ 1 em 5 min (métrica do Function App)
   - Execução com falha ou exceção em qualquer função, em 5 min (consulta no Application Insights)
   - Orçamento mensal com aviso aos 80% (opcional, parâmetro `budgetAmount`)
+  - Verificado em 03/11/2026: uma falha simulada (3 respostas `500`) fez o alerta de falhas disparar em cerca de 5 minutos e o e-mail chegou aos administradores. O alerta de 5xx **não** disparou, porque a métrica `Http5xx` do host não conta o `500` devolvido pela própria função; o alerta de falhas cobre esse caso.
   - Limitação: alertas de log aceitam janela de no máximo 2 dias, então "relatório semanal não executou" não é alertável; uma falha na execução dele cai no alerta de falhas.
 - **Health**: endpoint de saúde opcional e teste de disponibilidade.
 
@@ -202,8 +204,13 @@ az functionapp function list -g rg-feedback -n <functionAppName> -o table   # de
 
 ### 9.4 Deploy automatizado (CI/CD)
 
-Planejado para a Fase 4 do [PLANEJAMENTO.md](PLANEJAMENTO.md): `fase-4-ci.yml` (testes, `bicep build`, `what-if`)
-e `fase-4-deploy.yml` (infra e publicação das funções, com login OIDC no Azure).
+Dois workflows em `.github/workflows/`, ambos com login OIDC no Azure (sem segredos de longa duração):
+
+- `fase-4-ci.yml` (em PRs): `mvn verify` (testes e cobertura), `az bicep build` e `what-if`.
+- `fase-4-deploy.yml` (push na `main` ou manual): implanta a infra (Bicep) e publica as funções com `Azure/functions-action`.
+
+Configuração no GitHub: secrets `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` e `ADMIN_EMAILS_JSON`, e variable `AZURE_RESOURCE_GROUP`.
+O GitHub emite o subject OIDC no formato com IDs (`repo:<dono>@<id>/<repo>@<id>:...`), então a identidade precisa de credenciais federadas nesse formato.
 
 ### 9.5 Testar
 
@@ -246,7 +253,7 @@ o gatilho e delegam; as regras ficam em `service/*` e são testadas sem Azure (3
 ### `notificar_urgencia` — Cosmos DB Change Feed
 - **Entrada:** lote de documentos do container `avaliacoes` (lease no container `leases`).
 - **Faz:** para cada avaliação `CRITICA`, envia e-mail aos administradores com descrição, urgência e data de envio (`NotificacaoUrgenciaService`).
-- **Garantia:** o Change Feed entrega "pelo menos uma vez", então um e-mail pode se repetir. Não conte com reprocessamento automático se o envio falhar: a exceção é registrada e dispara o alerta de falhas, e o reenvio é manual. Esse comportamento de falha ainda não foi testado no Azure.
+- **Garantia:** o Change Feed entrega "pelo menos uma vez", então um e-mail pode se repetir. Não conte com reprocessamento automático se o envio falhar: a exceção é registrada e dispara o alerta de falhas, e o reenvio é manual. A falha de envio em si não foi simulada no Azure; o alerta de falhas foi comprovado com uma falha na gravação (ver seção 7).
 - **Permissões:** leitura/escrita de leases no Cosmos; connection string do e-mail via Key Vault.
 
 ### `gerar_relatorio_semanal` — Timer `0 0 11 * * 1` (segunda 11:00 UTC = 08:00 BRT)
