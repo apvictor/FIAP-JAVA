@@ -43,7 +43,7 @@ Congelamento de funcionalidades: **10/11**. Depois disso, só correções e docu
 - [x] Providers registrados e verificação concluída (2ª rodada): Cosmos DB serverless criado com sucesso em `brazilsouth`. **Não verificado ainda:** Function App Linux Consumption e Communication Services Email (só aparecem no primeiro deploy)
 - [x] Equipe: projeto **individual** (Armando Victor Pereira Santos); todos os papéis ficam com uma pessoa
 - [x] Repositório no GitHub criado e `.gitignore` configurado (`*.bicepparam`, `local.settings.json`, `.env`, `target/`)
-- [x] `main` protegida por ruleset `proteger-main` (PR obrigatório com 0 aprovações, sem force push, sem exclusão)
+- [x] `main` protegida por ruleset `proteger-main` (PR obrigatório com 0 aprovações, sem force push, sem exclusão). Observação (03/11/2026): o ruleset tem bypass `always` para o papel Admin, então o dono do repositório consegue dar push direto na `main` (aconteceu com o commit do Workbook, sem CI prévio). Ajuste recomendado: bypass "Pull requests only"
 - [x] Repositório público (verificado pela API do GitHub)
 - [x] Sem colaboradores (projeto individual)
 - [x] Orçamento `orcamento-fase4` criado (US$ 25/mês, 01/10 a 30/12/2026). Conferir escopo = assinatura e alertas de 50% e 80%
