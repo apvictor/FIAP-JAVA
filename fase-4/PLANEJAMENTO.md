@@ -86,9 +86,9 @@ Congelamento de funcionalidades: **10/11**. Depois disso, só correções e docu
 - [ ] Provar o fluxo: alterar uma função → push → deploy automático
 
 ### Fase 5 — Monitoramento e alertas
-- [ ] Workbook/dashboard (invocações, falhas, duração, 4xx/5xx)
-- [ ] Alertas (já escritos em `alerts.bicep`): falhas de função, 5xx, orçamento → Action Group por e-mail
-- [ ] Simular falha e comprovar o e-mail de alerta
+- [x] Workbook `Feedback — saúde das funções` (`modules/workbook.bicep`) implantado em 03/11/2026 (deploy run 41640180687)
+- [x] Alertas implantados via `alerts.bicep`: falhas de função (`alert-feedback-falhas-funcoes`) e 5xx (`alert-feedback-http-5xx`) → Action Group por e-mail. Orçamento: `orcamento-fase4` criado manualmente na Fase 0 (`budgetAmount=0` no Bicep)
+- [x] Falha simulada em 03/11/2026: `COSMOS_CONTAINER` trocado para um nome inexistente por ~1,5 min, 3 POSTs devolveram 500 (13:12 UTC), valor restaurado e POST devolveu 201 (13:13). O alerta `alert-feedback-falhas-funcoes` disparou (`Fired`, 13:17:28 UTC) e o e-mail foi recebido pelo titular. Não comprovado: o alerta `alert-feedback-http-5xx` não disparou (a métrica `Http5xx` do host não conta o 500 devolvido pela função)
 
 ### Fase 6 — Testes ponta a ponta e documentação
 - [ ] E2E: enviar avaliações com notas 1, 5, 9; só a crítica gera e-mail
