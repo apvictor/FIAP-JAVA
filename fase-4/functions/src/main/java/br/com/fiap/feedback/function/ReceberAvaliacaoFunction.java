@@ -29,6 +29,7 @@ public class ReceberAvaliacaoFunction {
             @HttpTrigger(name = "req", methods = {HttpMethod.POST}, authLevel = AuthorizationLevel.FUNCTION,
                     route = "avaliacao") HttpRequestMessage<Optional<String>> request,
             ExecutionContext context) {
+        context.getLogger().info("Requisição recebida em receber_avaliacao");
         try {
             Avaliacao avaliacao = processar(request.getBody().orElse(null));
             context.getLogger().info("Avaliação registrada: id=" + avaliacao.id() + " urgencia=" + avaliacao.urgencia());
