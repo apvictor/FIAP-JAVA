@@ -48,6 +48,8 @@ alertas de feedbacks críticos e um relatório semanal com médias e estatístic
  Key Vault + Managed Identity ──▶ acesso sem senhas entre os serviços
 ```
 
+Diagramas em Mermaid (visão geral, fluxo de uma avaliação crítica e CI/CD): [docs/arquitetura.md](docs/arquitetura.md).
+
 ### Componentes e responsabilidade única
 
 | Componente | Responsabilidade (única) |
@@ -84,6 +86,7 @@ Header: `x-functions-key: <chave>`
 | `201` | Avaliação registrada: `{ "id": "...", "urgencia": "CRITICA" }` |
 | `400` | `descricao` vazia/ausente (máx. 1000 caracteres) ou `nota` não inteira fora de 0–10 |
 | `401` | Chave ausente/inválida |
+| `500` | Falha interna (ex.: Cosmos indisponível); detalhes só no log |
 
 ### Modelo de dados (Cosmos DB, container `avaliacoes`)
 
@@ -112,7 +115,7 @@ quantidade de avaliações por dia; quantidade de avaliações por urgência.
 - **Sem segredos no CI**: GitHub Actions usa federação OIDC com uma User-Assigned Managed Identity (`id-gh-fase4`, `Contributor` e `User Access Administrator` só no resource group); segredos da aplicação ficam no Key Vault (referências nas App Settings).
 - **Em trânsito**: HTTPS obrigatório, TLS mínimo 1.2, FTP desabilitado.
 - **Em repouso**: criptografia padrão do Azure no Cosmos DB e no Storage.
-- **Proteção da API**: chave de função (`authLevel: function`), validação rigorosa do payload, limite de tamanho do corpo.
+- **Proteção da API**: chave de função (`authLevel: function`), validação rigorosa do payload (nota inteira de 0 a 10, descrição de 1 a 1000 caracteres).
 - **Dados pessoais**: a API não coleta identificação do aluno; logs não gravam a `descricao` completa.
 - **Governança**: tudo em um resource group com tags obrigatórias (`projeto`, `ambiente`, `responsavel`), retenção de logs de 30 dias, orçamento com alerta de custo, Activity Log ativo.
 
@@ -126,7 +129,7 @@ quantidade de avaliações por dia; quantidade de avaliações por urgência.
   - Orçamento mensal com aviso aos 80% (opcional, parâmetro `budgetAmount`)
   - Verificado em 03/11/2026: uma falha simulada (3 respostas `500`) fez o alerta de falhas disparar em cerca de 5 minutos e o e-mail chegou aos administradores. O alerta de 5xx **não** disparou, porque a métrica `Http5xx` do host não conta o `500` devolvido pela própria função; o alerta de falhas cobre esse caso.
   - Limitação: alertas de log aceitam janela de no máximo 2 dias, então "relatório semanal não executou" não é alertável; uma falha na execução dele cai no alerta de falhas.
-- **Health**: endpoint de saúde opcional e teste de disponibilidade.
+- **Fora do escopo:** endpoint de saúde e teste de disponibilidade não foram implementados.
 
 ## 8. Estrutura do repositório
 
@@ -154,8 +157,10 @@ fase-4/
 ├── infra/                       # Bicep
 │   ├── main.bicep
 │   ├── main.bicepparam.example
-│   └── modules/ (functionapp, cosmos, communication, keyvault, monitoring)
-└── docs/                        # diagramas, prints, roteiro do vídeo
+│   ├── modules/                 # functionapp, cosmos, communication, keyvault, monitoring, rbac, alerts, workbook
+│   └── ...
+└── scripts/verificar-assinatura.sh
+└── docs/                        # arquitetura.md (diagramas), prints, roteiro do vídeo
 
 .github/workflows/               # na raiz do repositório
 ├── fase-4-ci.yml                # mvn verify + bicep build/what-if
@@ -188,8 +193,8 @@ az deployment group create  -g rg-feedback -n deploy-inicial -f infra/main.bicep
   --query properties.outputs
 ```
 
-Cria 18 recursos: Cosmos DB, Communication Services (e-mail), Key Vault, Function App, Storage, Log Analytics,
-Application Insights, Action Group e alertas. Os outputs trazem `functionAppName`, `functionAppHost` e `senderAddress`.
+Cria: Cosmos DB, Communication Services (e-mail), Key Vault, Function App (com plano e Storage), Log Analytics,
+Application Insights, Action Group, alertas, Workbook e as atribuições de RBAC. Os outputs trazem `functionAppName`, `functionAppHost` e `senderAddress`.
 
 Logo após o primeiro deploy, as referências do Function App ao Key Vault podem aparecer como
 `AccessToKeyVaultDenied` até a permissão propagar. Reinicie o app: `az functionapp restart -g rg-feedback -n <functionAppName>`.
@@ -210,6 +215,19 @@ Dois workflows em `.github/workflows/`, ambos com login OIDC no Azure (sem segre
 - `fase-4-deploy.yml` (push na `main` ou manual): implanta a infra (Bicep) e publica as funções com `Azure/functions-action`.
 
 Configuração no GitHub: secrets `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` e `ADMIN_EMAILS_JSON`, e variable `AZURE_RESOURCE_GROUP`.
+A identidade `id-gh-fase4` **não faz parte do Bicep**: foi criada à mão, porque o tenant negou o registro de aplicativos (`Insufficient privileges`). Para recriá-la:
+
+```bash
+az identity create -g rg-feedback -n id-gh-fase4 -l brazilsouth
+az identity federated-credential create -g rg-feedback --identity-name id-gh-fase4 -n github-main-id \
+  --issuer https://token.actions.githubusercontent.com --audiences api://AzureADTokenExchange \
+  --subject "repo:<dono>@<id-dono>/<repo>@<id-repo>:ref:refs/heads/main"
+# repetir com -n github-pr-id e o subject terminando em :pull_request
+az role assignment create --assignee-object-id <principalId> --assignee-principal-type ServicePrincipal \
+  --role Contributor --scope /subscriptions/<sub>/resourceGroups/rg-feedback
+# idem para o role "User Access Administrator" (o Bicep cria role assignments)
+```
+
 O GitHub emite o subject OIDC no formato com IDs (`repo:<dono>@<id>/<repo>@<id>:...`), então a identidade precisa de credenciais federadas nesse formato.
 
 ### 9.5 Testar
