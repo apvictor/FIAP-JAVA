@@ -1,0 +1,66 @@
+name: fase-4-deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'fase-4/**'
+      - '.github/workflows/fase-4-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: fase-4-deploy
+  cancel-in-progress: false
+
+jobs:
+  infra:
+    runs-on: ubuntu-latest
+    outputs:
+      function_app: ${{ steps.deploy.outputs.functionAppName }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Implantar infraestrutura
+        id: deploy
+        run: |
+          nome=$(az deployment group create \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --template-file fase-4/infra/main.bicep \
+            --parameters adminEmails='${{ secrets.ADMIN_EMAILS_JSON }}' \
+            --query properties.outputs.functionAppName.value -o tsv)
+          echo "functionAppName=$nome" >> "$GITHUB_OUTPUT"
+
+  funcoes:
+    needs: infra
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fase-4/functions
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: fase-4/functions/pom.xml
+      - name: Testes e empacotamento
+        run: mvn -B -ntp verify package -DfunctionAppName=${{ needs.infra.outputs.function_app }}
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Publicar funções
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ needs.infra.outputs.function_app }}
+          package: fase-4/functions/target/azure-functions/${{ needs.infra.outputs.function_app }}

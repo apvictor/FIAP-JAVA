@@ -39,7 +39,7 @@ Congelamento de funcionalidades: **10/11**. Depois disso, só correções e docu
 
 - [x] Decidir cloud: **Azure**
 - [x] Assinatura: **Azure for Students**, US$ 100, expira em 07/10/2027, tenant institucional **SENAC.BR**
-- [x] Verificação da assinatura (1ª rodada): regiões permitidas por policy = `brazilsouth`, `italynorth`, `belgiumcentral`, `chilecentral`, `francecentral` (**usar `brazilsouth`**); criação de app registration **permitida** (OIDC viável); providers não registrados
+- [x] Verificação da assinatura (1ª rodada): regiões permitidas por policy = `brazilsouth`, `italynorth`, `belgiumcentral`, `chilecentral`, `francecentral` (**usar `brazilsouth`**); criação de app registration **negada** para a conta do aluno em 03/11/2026 (`Insufficient privileges`); OIDC feito com User-Assigned Managed Identity; providers não registrados
 - [x] Providers registrados e verificação concluída (2ª rodada): Cosmos DB serverless criado com sucesso em `brazilsouth`. **Não verificado ainda:** Function App Linux Consumption e Communication Services Email (só aparecem no primeiro deploy)
 - [x] Equipe: projeto **individual** (Armando Victor Pereira Santos); todos os papéis ficam com uma pessoa
 - [x] Repositório no GitHub criado e `.gitignore` configurado (`*.bicepparam`, `local.settings.json`, `.env`, `target/`)
@@ -63,7 +63,7 @@ Congelamento de funcionalidades: **10/11**. Depois disso, só correções e docu
 - [x] Managed Identity do Function App com roles mínimas (Cosmos data restrito ao database; Key Vault Secrets User). O envio de e-mail usa a connection string guardada no Key Vault
 - [x] Desabilitar chaves locais do Cosmos DB; HTTPS only, TLS 1.2, FTP off
 - [x] Segredos no Key Vault com referências nas App Settings
-- [ ] App registration/federated credential para GitHub OIDC (permitido no tenant; criar na Fase 4) 
+- [x] Federated credential para GitHub OIDC em 03/11/2026: managed identity `id-gh-fase4` (rg-feedback) com credenciais para `main` e `pull_request`; roles Contributor e User Access Administrator no resource group. Secrets do GitHub: ver Fase 4
 - [x] Revisão: nenhum segredo no repositório
 
 ### Fase 3 — Funções serverless
@@ -80,6 +80,7 @@ Congelamento de funcionalidades: **10/11**. Depois disso, só correções e docu
 - [ ] Observar a primeira execução real do timer `gerar_relatorio_semanal` (segunda 19/10, 11:00 UTC) nos logs e no e-mail; até lá só o gatilho manual foi exercitado
 
 ### Fase 4 — CI/CD
+- [ ] Secrets `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `ADMIN_EMAILS_JSON` e variable `AZURE_RESOURCE_GROUP` no GitHub
 - [ ] `fase-4-ci.yml` (em `.github/workflows/` na raiz do repo; `paths: fase-4/**`): `mvn verify`, `az bicep build`, `what-if`
 - [ ] `fase-4-deploy.yml` (`working-directory: fase-4`): deploy da infra + `Azure/functions-action`
 - [ ] Provar o fluxo: alterar uma função → push → deploy automático
