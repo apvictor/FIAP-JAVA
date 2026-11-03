@@ -77,6 +77,10 @@ responsabilidades está no código e nos gatilhos; cada função é uma classe i
 
 Header: `x-functions-key: <chave>`
 
+> O enunciado cita `POST /avaliação`. A rota implementada é `POST /api/avaliacao`: o Azure Functions
+> acrescenta o prefixo `/api` por padrão, e evitamos acento em caminho de URL por compatibilidade
+> (codificação percentual e proxies). O contrato do corpo (`descricao` e `nota`) é o do enunciado.
+
 ```json
 { "descricao": "A aula foi confusa e o áudio estava ruim", "nota": 2 }
 ```
