@@ -4,9 +4,9 @@ Plataforma serverless no Azure onde estudantes avaliam aulas e administradores r
 alertas de feedbacks críticos e um relatório semanal com médias e estatísticas.
 
 > Prazo de entrega: 17/11/2026.
-> Status: infraestrutura, funções, CI/CD e monitoramento implantados e verificados no Azure.
-> Faltam testes ponta a ponta finais, vídeo e entrega. Veja [PLANEJAMENTO.md](PLANEJAMENTO.md).
-> Itens marcados com `TODO` serão preenchidos até a entrega.
+> Status: concluído. Infraestrutura, 4 funções, CI/CD, monitoramento e testes ponta a ponta
+> implantados e verificados no Azure. Vídeo de demonstração na [seção 12](#12-demonstração);
+> histórico de execução e evidências em [PLANEJAMENTO.md](PLANEJAMENTO.md).
 
 ## 1. Modelo de cloud escolhido
 
@@ -164,7 +164,7 @@ fase-4/
 │   ├── modules/                 # functionapp, cosmos, communication, keyvault, monitoring, rbac, alerts, workbook
 │   └── ...
 └── scripts/verificar-assinatura.sh
-└── docs/                        # arquitetura.md (diagramas), prints, roteiro do vídeo
+└── docs/                        # arquitetura.md (diagramas), roteiro-video.md, enunciado (PDF)
 
 .github/workflows/               # na raiz do repositório
 ├── fase-4-ci.yml                # mvn verify + bicep build/what-if
@@ -303,10 +303,14 @@ removido com `az group delete -n rg-feedback`.
 
 ## 12. Demonstração
 
-Link do vídeo: `TODO`
+Link do vídeo: _a ser incluído após a publicação_.
+
+Roteiro seguido na gravação: [docs/roteiro-video.md](docs/roteiro-video.md).
 
 ## 13. Equipe
 
+Projeto realizado individualmente, sem grupo (formato permitido para esta entrega).
+
 | Nome | RM | Responsabilidades |
 |---|---|---|
-| Armando Victor Pereira Santos | `TODO` | Projeto individual: arquitetura, infraestrutura, funções, CI/CD, monitoramento, documentação e vídeo |
+| Armando Victor Pereira Santos | RM372357 | Projeto individual: arquitetura, infraestrutura, funções, CI/CD, monitoramento, documentação e vídeo |

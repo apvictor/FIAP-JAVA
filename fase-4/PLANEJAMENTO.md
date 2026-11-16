@@ -41,7 +41,7 @@ Congelamento de funcionalidades: **10/11**. Depois disso, só correções e docu
 - [x] Assinatura: **Azure for Students**, US$ 100, expira em 07/10/2027, tenant institucional **SENAC.BR**
 - [x] Verificação da assinatura (1ª rodada): regiões permitidas por policy = `brazilsouth`, `italynorth`, `belgiumcentral`, `chilecentral`, `francecentral` (**usar `brazilsouth`**); criação de app registration **negada** para a conta do aluno em 03/11/2026 (`Insufficient privileges`); OIDC feito com User-Assigned Managed Identity; providers não registrados
 - [x] Providers registrados e verificação concluída (2ª rodada): Cosmos DB serverless criado com sucesso em `brazilsouth`. **Não verificado ainda:** Function App Linux Consumption e Communication Services Email (só aparecem no primeiro deploy)
-- [x] Equipe: projeto **individual** (Armando Victor Pereira Santos); todos os papéis ficam com uma pessoa
+- [x] Equipe: projeto **individual** (Armando Victor Pereira Santos, RM372357), sem grupo, formato permitido; todos os papéis ficam com uma pessoa
 - [x] Repositório no GitHub criado e `.gitignore` configurado (`*.bicepparam`, `local.settings.json`, `.env`, `target/`)
 - [x] `main` protegida por ruleset `proteger-main` (PR obrigatório com 0 aprovações, sem force push, sem exclusão). Observação (03/11/2026): o ruleset tem bypass `always` para o papel Admin, então o dono do repositório consegue dar push direto na `main` (aconteceu com o commit do Workbook, sem CI prévio). Corrigido em 03/11/2026: bypass alterado para "Pull requests only" (push direto na `main` agora é bloqueado também para o admin)
 - [x] Repositório público (verificado pela API do GitHub)
@@ -93,7 +93,7 @@ Congelamento de funcionalidades: **10/11**. Depois disso, só correções e docu
 ### Fase 6 — Testes ponta a ponta e documentação
 - [x] E2E em 03/11/2026 (13:33 UTC): notas 1, 5 e 9 devolveram 201 (CRITICA, MEDIA, BAIXA); o Change Feed entregou 3 documentos e `notificar_urgencia` enviou 1 e-mail; recebimento de 1 e-mail de urgência confirmado pelo titular. Ciclo do alerta também confirmado por e-mail: Fired (13:17 UTC) e Resolved (13:33 UTC)
 - [x] Relatório validado em 03/11/2026 (`POST /api/relatorio?dias=30`): total 7, média 6,2857, período 05/10 a 03/11; confere com a soma manual (14/10: notas 9 e 2; 03/11: 9, 9, 1, 5, 9 = 44/7); e-mail do relatório recebido. Dados cobrem só 2 dias distintos (14/10 e 03/11). Nota: logo após mudança de configuração o host reinicia e a rota responde 404 por alguns minutos
-- [ ] README seções 12 e 13 (link do vídeo e RM) e prints em `docs/`. Seção 10 e diagrama (`docs/arquitetura.md`) concluídos
+- [x] README: seção 10, diagrama (`docs/arquitetura.md`), RM na seção 13 e status final. Prints dispensados: o enunciado não os exige e o vídeo mostra o mesmo conteúdo. Pendente só o link do vídeo (seção 12)
 - [x] Revisão cruzada de código e documentação em 03/11/2026, incluindo conferência contra o enunciado (`docs/ADJT - Fase 4 - Tech Challenge_rev.pdf`): todos os requisitos atendidos; divergência única é a rota `/api/avaliacao` vs `/avaliação`, documentada no README §4
 
 ### Fase 7 — Vídeo de demonstração (~8–10 min)
