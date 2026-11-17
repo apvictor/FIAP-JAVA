@@ -5,15 +5,16 @@ A tabela resume cada cena e o critério do enunciado que ela cobre; as falas com
 
 ## Antes de gravar
 
-- [ ] Enviar algumas avaliações em dias diferentes nos dias anteriores, para o relatório mostrar variação por dia.
-- [ ] Aguardar uns 5 minutos depois de qualquer deploy ou mudança de configuração: o host reinicia e a rota responde 404 nesse intervalo.
-- [ ] Abrir em abas: portal Azure (conta do SENAC, diretório SENAC.BR), GitHub (Actions), caixa de e-mail dos administradores.
-- [ ] Guardar a chave de função em variável de ambiente **fora da tela** (nunca exibir a chave no vídeo):
+- [x] Enviar algumas avaliações em dias diferentes nos dias anteriores, para o relatório mostrar variação por dia:
+  `./infra/scripts/popular-historico.sh` (grava direto no Cosmos com datas retroativas, já que a API usa a data atual).
+- [x] Aguardar uns 5 minutos depois de qualquer deploy ou mudança de configuração: o host reinicia e a rota responde 404 nesse intervalo.
+- [x] Abrir em abas: portal Azure (conta do SENAC, diretório SENAC.BR), GitHub (Actions), caixa de e-mail dos administradores.
+- [x] Guardar a chave de função em variável de ambiente **fora da tela** (nunca exibir a chave no vídeo):
   ```bash
   APP=<functionAppName>
   export KEY=$(az functionapp keys list -g rg-feedback -n $APP --query functionKeys.default -o tsv)
   ```
-- [ ] Testar o roteiro inteiro uma vez antes, de preferência no mesmo dia.
+- [x] Testar o roteiro inteiro uma vez antes, de preferência no mesmo dia.
 
 ## Cenas
 
@@ -48,6 +49,15 @@ curl -s -X POST "$URL" -H "x-functions-key: $KEY" -H "Content-Type: application/
 O e-mail de urgência chega em cerca de 10 a 20 segundos. Se a espera ficar longa na gravação, mostre o log no
 Application Insights (`traces`, função `notificar_urgencia`: "1 e-mail(s) de urgência") e volte ao e-mail na edição.
 
+## Comando da cena 4
+
+```bash
+# gera o relatório dos últimos 30 dias e envia por e-mail aos administradores (mesmo envio do timer semanal)
+curl -s -X POST "https://$APP.azurewebsites.net/api/relatorio?dias=30" -H "x-functions-key: $KEY"; echo
+```
+
+A resposta traz o resumo (total, média, contagens); o e-mail chega em alguns segundos.
+
 ## Falas por cena
 
 Texto para ler ou adaptar durante a gravação. São cerca de 840 palavras, uns 6 minutos e meio de fala em ritmo
@@ -57,8 +67,7 @@ normal; com a navegação no portal, os comandos e a espera dos e-mails, o víde
 
 [Tela: README, seções 1 e 2, depois `docs/arquitetura.md` com o diagrama de visão geral]
 
-> Olá, eu sou o Armando Victor Pereira Santos, RM372357, e este é o meu Tech Challenge da Fase 4, feito
-> individualmente. O desafio é uma plataforma de feedback de aulas: o estudante envia uma avaliação, os
+> Olá, eu sou o Armando, e este é o meu Tech Challenge da Fase 4. O desafio é uma plataforma de feedback de aulas: o estudante envia uma avaliação, os
 > administradores recebem um aviso quando ela é crítica e, toda semana, um relatório com a média das notas.
 >
 > Escolhi a Microsoft Azure com um modelo serverless: as funções rodam no Azure Functions, em Java 21, no plano
