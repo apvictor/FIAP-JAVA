@@ -5,8 +5,9 @@ alertas de feedbacks críticos e um relatório semanal com médias e estatístic
 
 > Prazo de entrega: 17/11/2026.
 > Status: concluído. Infraestrutura, 4 funções, CI/CD, monitoramento e testes ponta a ponta
-> implantados e verificados no Azure. Vídeo de demonstração na [seção 12](#12-demonstração);
-> histórico de execução e evidências em [PLANEJAMENTO.md](PLANEJAMENTO.md).
+> implantados e verificados no Azure.
+>
+> **Vídeo de demonstração:** https://youtu.be/bsIeGevQqRs ([detalhes na seção 12](#12-demonstração-e-verificação))
 
 ## 1. Modelo de cloud escolhido
 
@@ -14,7 +15,7 @@ alertas de feedbacks críticos e um relatório semanal com médias e estatístic
 |---|---|---|
 | Provedor | **Microsoft Azure** | Alinhado ao conteúdo da fase (Azure Functions, Application Insights) e ao crédito disponível |
 | Modelo de serviço | **FaaS (Azure Functions) + serviços gerenciados (PaaS)** | Sem servidores para operar; paga-se por uso |
-| Plano de execução | **Consumption (ou Flex Consumption)** | Escala a zero; custo próximo de zero neste volume |
+| Plano de execução | **Consumption (Linux)** | Escala a zero; custo próximo de zero neste volume |
 | Runtime | **Java 21** + Maven, Azure Functions Java | Linguagem da pós-graduação; suporte oficial no Functions |
 | IaC | **Bicep** | Nativo do Azure; dispensa backend de state |
 | CI/CD | **GitHub Actions** (login OIDC no Azure) | Deploy automatizado sem segredos de longa duração |
@@ -144,7 +145,6 @@ GitHub reconhece) e usam `working-directory: fase-4` e filtro de caminho `fase-4
 ```
 fase-4/
 ├── README.md
-├── PLANEJAMENTO.md
 ├── functions/                   # projeto Maven (Azure Functions, Java 21)
 │   ├── pom.xml
 │   ├── local.settings.json.example
@@ -163,8 +163,8 @@ fase-4/
 │   ├── main.bicepparam.example
 │   ├── modules/                 # functionapp, cosmos, communication, keyvault, monitoring, rbac, alerts, workbook
 │   └── ...
-└── scripts/verificar-assinatura.sh
-└── docs/                        # arquitetura.md (diagramas), roteiro-video.md, enunciado (PDF)
+└── scripts/                 # verificar-assinatura.sh, popular-historico.sh
+└── docs/arquitetura.md          # diagramas da solução (Mermaid)
 
 .github/workflows/               # na raiz do repositório
 ├── fase-4-ci.yml                # mvn verify + bicep build/what-if
@@ -252,7 +252,12 @@ curl -X POST "https://$APP.azurewebsites.net/api/relatorio?dias=7" -H "x-functio
 
 Para acompanhar as execuções: Application Insights (`appi-feedback`) → *Logs*, consultando `traces` por `operation_Name`.
 
-Testes locais: `cd functions && mvn verify` (relatório de cobertura em `target/site/jacoco/index.html`).
+Dados de demonstração: a API grava sempre com a data do dia. Para o relatório mostrar variação entre dias,
+`infra/scripts/popular-historico.sh` insere avaliações de exemplo com datas dos dias anteriores direto no Cosmos DB
+(autenticação Entra ID). Use só em ambiente de demonstração.
+
+Testes locais: `cd functions && mvn verify` executa os 32 testes JUnit e falha se a cobertura de linhas das
+regras de negócio (`service/`) ficar abaixo de 80% (hoje em 100%); o relatório fica em `target/site/jacoco/index.html`.
 Execução local: copie `local.settings.json.example` para `local.settings.json`, faça `az login` (o acesso ao Cosmos usa `DefaultAzureCredential`) e rode `mvn clean package azure-functions:run`.
 
 ### 9.6 Remover tudo
@@ -301,11 +306,22 @@ Consumption + Cosmos DB serverless + Communication Services têm custo desprezí
 Como os créditos são limitados, a demonstração é gravada em vídeo e o resource group pode ser
 removido com `az group delete -n rg-feedback`.
 
-## 12. Demonstração
+## 12. Demonstração e verificação
 
-Link do vídeo: _a ser incluído após a publicação_.
+**Vídeo:** https://youtu.be/bsIeGevQqRs (7 min 26 s). Mostra a arquitetura, o portal do Azure com as 4 funções
+ativas e as configurações de segurança, o fluxo ao vivo (nota alta, nota crítica com e-mail, payload inválido),
+o relatório, o CI/CD e o monitoramento.
 
-Roteiro seguido na gravação: [docs/roteiro-video.md](docs/roteiro-video.md).
+Verificações feitas no ambiente implantado:
+
+| O que foi verificado | Resultado |
+|---|---|
+| Fluxo ponta a ponta com notas 1, 5 e 9 | `201` com urgências CRITICA, MEDIA e BAIXA; o Change Feed entregou 3 documentos e só a nota 1 gerou e-mail de urgência, recebido pelos administradores |
+| Validação da API | Payload sem nota, nota fora da faixa ou não inteira: `400`; sem chave: `401` |
+| Relatório sob demanda | Total e média conferidos contra a soma manual das notas gravadas; e-mail recebido com média, contagem por dia, por urgência e lista de avaliações |
+| Relatório semanal (timer) | Execuções automáticas às segundas, 11:00 UTC, registradas no Application Insights com status `Succeeded` |
+| Alertas | Falha simulada (respostas `500`): o alerta de falhas disparou em cerca de 5 minutos e enviou e-mail; após a correção, chegou o e-mail de resolução |
+| CI/CD | Cada PR roda `fase-4-ci` (testes, cobertura, Bicep e what-if); cada merge na `main` roda `fase-4-deploy` e publica as funções; mudança de código comprovada no Application Insights após o deploy |
 
 ## 13. Equipe
 
