@@ -27,3 +27,6 @@ __queuestorage__/
 
 # Artefatos
 *.zip
+
+# Gravações do vídeo (grandes demais para o git)
+videos/
